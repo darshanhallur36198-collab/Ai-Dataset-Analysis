@@ -56,13 +56,18 @@
 
         <!-- Action / Upload Bar -->
         <div class="upload-sect" id="drop-zone">
-            <h3>Upload New Dataset</h3>
-            <p style="color: var(--text-secondary); margin: 10px 0;">Drag & drop CSV or XLSX files here</p>
+            <h3 style="color: var(--text-primary); margin-bottom: 10px;">📁 Upload New Dataset</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">Drag & drop CSV or XLSX files here</p>
+            
             <input type="file" id="dataset" accept=".csv, .xlsx" style="display:none">
-            <button class="btn-primary" onclick="document.getElementById('dataset').click()">Browse Files</button>
-            <p id="file-name" style="margin-top: 10px; font-weight: 500;"></p>
-            <br>
-            <button id="analyze-btn" class="btn-primary" onclick="upload()" disabled style="background: var(--accent-secondary); width: 200px;">Run AI Analysis</button>
+            <button class="btn-primary" onclick="document.getElementById('dataset').click()">🗂 Browse Files</button>
+            
+            <p id="file-name" style="margin-top: 15px; font-weight: 500; color: var(--accent-color);"></p>
+            
+            <button id="analyze-btn" class="btn-primary" onclick="upload()" disabled
+                style="margin-top: 15px; background: var(--accent-secondary); min-width: 200px; display: block; margin-left: auto; margin-right: auto;">
+                🚀 Run AI Analysis
+            </button>
         </div>
 
         <!-- Dashboard Result Rows -->
