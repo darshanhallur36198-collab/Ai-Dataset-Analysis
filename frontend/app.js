@@ -18,6 +18,19 @@ function saveSettings() {
     localStorage.setItem('api_url',     document.getElementById('setting-api-url').value.trim());
     localStorage.setItem('max_charts',  document.getElementById('setting-max-charts').value);
     localStorage.setItem('chart_theme', document.getElementById('setting-theme').value);
+
+    // ── Re-render all open charts with the new theme ──────────
+    if (analysisData && analysisData.charts) {
+        ['dash', 'graph'].forEach(prefix => {
+            analysisData.charts.forEach((_, i) => {
+                const el = document.getElementById(`${prefix}_${i}`);
+                if (el) {
+                    Plotly.relayout(el, { template: getSettings().theme });
+                }
+            });
+        });
+    }
+
     const msg = document.getElementById('settings-msg');
     msg.style.display = 'block';
     setTimeout(() => msg.style.display = 'none', 2500);
@@ -209,13 +222,17 @@ function populateInsights(insights) {
 
 // ─── Render one Plotly chart into a container ──────────────────
 function renderChart(chartData, index, container, prefix = 'c') {
-    const settings = getSettings();
+    const settings  = getSettings();
+    const chartType = chartData._chart_type || 'other';
+
     const card = document.createElement('div');
-    card.className = 'chart-card';
+    card.className          = 'chart-card';
+    card.dataset.chartType  = chartType;   // used by filter buttons
 
     const header = document.createElement('div');
     header.className   = 'chart-header';
-    header.textContent = chartData.layout?.title?.text || `Chart ${index + 1}`;
+    header.textContent = (chartData.layout?.title?.text || `Chart ${index + 1}`)
+                            .replace(/<[^>]+>/g, '');   // strip any HTML tags
 
     const plotDiv = document.createElement('div');
     plotDiv.id        = `${prefix}_${index}`;
@@ -227,12 +244,12 @@ function renderChart(chartData, index, container, prefix = 'c') {
 
     const layout = {
         ...chartData.layout,
-        template:        settings.theme,
-        paper_bgcolor:   'rgba(0,0,0,0)',
-        plot_bgcolor:    'rgba(0,0,0,0)',
-        font:            { color: '#c9d1d9' },
+        template:      settings.theme,
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor:  'rgba(0,0,0,0)',
+        font:          { color: '#c9d1d9', family: 'Inter, Segoe UI, sans-serif' },
     };
-    Plotly.newPlot(plotDiv.id, chartData.data, layout, { responsive: true, displayModeBar: true });
+    Plotly.newPlot(plotDiv.id, chartData.data, layout, { responsive: true, displayModeBar: false });
 }
 
 // ─── Dashboard charts (first 6 as preview) ────────────────────
