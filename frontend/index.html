@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Data Analyst</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Plotly library for dynamic charts -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+</head>
+<body>
+    <h2>AI Data Analyst</h2>
+    <div class="subtitle">Autonomous Data Cleaning & Statistical Generation</div>
+
+    <div class="card">
+        <label for="dataset" class="upload-area" id="drop-zone">
+            <span class="file-label" id="file-name">Drag & Drop CSV, or Click to Browse</span>
+            <input type="file" id="dataset" accept=".csv, .xlsx">
+        </label>
+        
+        <button id="analyze-btn" onclick="upload()" disabled>Analyze Dataset</button>
+        
+        <div class="loading" id="loader">
+            <div class="spinner"></div> Processing intelligence...
+        </div>
+    </div>
+
+    <!-- AI Assistant Section -->
+    <div id="ai-assistant" class="result-card" style="display: none; margin-top: 20px; border-left: 5px solid #d2a8ff;">
+        <div class="result-header">✨ AI Data Assistant</div>
+        <div id="ai-bubbles" class="chat-container">
+            <!-- Insights bubbles will appear here -->
+        </div>
+    </div>
+
+    <!-- BI Dashboard Output -->
+    <div id="result-container">
+        
+        <!-- Summary Stats Area -->
+        <div class="result-card">
+            <div class="result-header">📊 Dataset Summary (AI Analyzed)</div>
+            <pre id="result">Results will appear here...</pre>
+        </div>
+
+        <!-- Machine Learning Area -->
+        <div class="result-card ml-card" id="ml-container" style="display: none; margin-top: 20px;">
+            <div class="result-header">🤖 Machine Learning Prediction Engine</div>
+            <div id="ml-result"></div>
+        </div>
+
+        <!-- Visual Analytics Area (Plotly) -->
+        <div class="result-card chart-card" id="charts-wrapper" style="display: none; margin-top: 20px;">
+            <div class="result-header">📈 AI Visual Analytics Dashboard</div>
+            <div id="chart-container" class="chart-grid"></div>
+        </div>
+
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
