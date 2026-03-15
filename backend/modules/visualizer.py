@@ -34,27 +34,26 @@ def generate_charts(df):
             ),
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(11,15,28,0.6)",
-            margin=dict(l=70, r=30, b=100, t=100),
+            margin=dict(l=150, r=50, b=80, t=100), # Increased left margin for horizontal labels
             font=dict(family="Inter, Segoe UI, sans-serif", size=13, color="#c9d1d9"),
             hoverlabel=dict(bgcolor="rgba(20,20,40,0.95)", font_size=13, font_color="#fff"),
             legend=dict(bgcolor="rgba(30,30,50,0.7)", borderwidth=0, font=dict(size=12)),
         )
         # Gridlines: light, subtle
-        fig.update_xaxes(showgrid=False, zeroline=False,
+        fig.update_xaxes(showgrid=True, gridcolor="rgba(255,255,255,0.06)", zeroline=False,
                          tickfont=dict(size=12), title_font=dict(size=13))
-        fig.update_yaxes(showgrid=True, gridcolor="rgba(255,255,255,0.06)",
-                         zeroline=False, tickfont=dict(size=12), title_font=dict(size=13))
+        fig.update_yaxes(showgrid=False, zeroline=False, tickfont=dict(size=12), title_font=dict(size=13))
         result = json.loads(fig.to_json())
         result["_chart_type"] = chart_type
         return result
 
-    # ── Helper: format Y axis ticks to avoid scientific notation ──
-    def fix_yaxis(fig):
-        fig.update_yaxes(tickformat=",", exponentformat="none")
+    # ── Helper: format X axis ticks (since now horizontal) ──
+    def fix_xaxis(fig):
+        fig.update_xaxes(tickformat=",", exponentformat="none")
         return fig
 
     # ─────────────────────────────────────────────────────────────
-    # 1. BAR CHART (for categorical × numeric) — like screenshot 2
+    # 1. HORIZONTAL BAR CHART (for categorical × numeric)
     # ─────────────────────────────────────────────────────────────
     useful_cats = [c for c in cat_cols if 1 < df[c].nunique() <= 30]
     for cat_col in useful_cats[:3]:
@@ -62,39 +61,43 @@ def generate_charts(df):
             # Sum or count
             grouped = (df.groupby(cat_col)[numeric_cols[0]].sum()
                          .reset_index()
-                         .sort_values(numeric_cols[0], ascending=False)
-                         .head(10))
+                         .sort_values(numeric_cols[0], ascending=True) # Ascending for horizontal (Plotly draws bottom-up)
+                         .tail(10))
             grouped.columns = [cat_col, "Value"]
 
             # readable labels
             text_labels = [fmt_num(v) for v in grouped["Value"]]
 
             fig = go.Figure(go.Bar(
-                x=grouped[cat_col],
-                y=grouped["Value"],
+                y=grouped[cat_col],
+                x=grouped["Value"],
+                orientation='h',
                 text=text_labels,
                 textposition="outside",
                 textfont=dict(size=12, color="#ffffff"),
                 marker_color=COLORS[0],
                 marker_line_width=0,
-                hovertemplate=f"<b>%{{x}}</b><br>{numeric_cols[0]}: %{{text}}<extra></extra>",
+                hovertemplate=f"<b>%{{y}}</b><br>{numeric_cols[0]}: %{{text}}<extra></extra>",
             ))
-            fix_yaxis(fig)
-            fig.update_xaxes(title_text=cat_col.replace("_"," ").title(), tickangle=-30)
-            fig.update_yaxes(title_text=numeric_cols[0].replace("_"," ").title())
+            fix_xaxis(fig)
+            fig.update_yaxes(title_text=cat_col.replace("_"," ").title())
+            fig.update_xaxes(title_text=numeric_cols[0].replace("_"," ").title())
             charts.append(finalize(fig,
                 f"Top 10 {cat_col.replace('_',' ').title()} by {numeric_cols[0].replace('_',' ').title()}",
-                "Sorted highest to lowest — bars show totals",
+                "Horizontal layout for better label readability",
                 chart_type="categorical"))
 
         # Count chart
-        counts = df[cat_col].value_counts().reset_index().head(10)
+        counts = df[cat_col].value_counts().reset_index().tail(10).sort_values(cat_col, ascending=True)
+        # Re-calc counts specifically to ensure top 10 are sorted correctly for horizontal
+        counts = df[cat_col].value_counts().reset_index().head(10).sort_values('count', ascending=True)
         counts.columns = [cat_col, "Count"]
         text_labels = [fmt_num(v) for v in counts["Count"]]
 
         fig = go.Figure(go.Bar(
-            x=counts[cat_col],
-            y=counts["Count"],
+            y=counts[cat_col],
+            x=counts["Count"],
+            orientation='h',
             text=text_labels,
             textposition="outside",
             textfont=dict(size=12, color="#ffffff"),
@@ -104,11 +107,11 @@ def generate_charts(df):
                 showscale=False,
                 line_width=0,
             ),
-            hovertemplate="<b>%{x}</b><br>Count: %{text}<extra></extra>",
+            hovertemplate="<b>%{y}</b><br>Count: %{text}<extra></extra>",
         ))
-        fix_yaxis(fig)
-        fig.update_xaxes(title_text=cat_col.replace("_"," ").title(), tickangle=-30)
-        fig.update_yaxes(title_text="Number of Records")
+        fix_xaxis(fig)
+        fig.update_yaxes(title_text=cat_col.replace("_"," ").title())
+        fig.update_xaxes(title_text="Number of Records")
         charts.append(finalize(fig,
             f"Distribution of {cat_col.replace('_',' ').title()}",
             "Frequency count per category (Top 10)",
@@ -147,7 +150,8 @@ def generate_charts(df):
         median_v = df[col].median()
         fig = px.histogram(df, x=col, nbins=30,
                            color_discrete_sequence=[COLORS[0]])
-        fix_yaxis(fig)
+        # Fix xaxis for histogram as it stays horizontal on X
+        fig.update_xaxes(tickformat=",", exponentformat="none")
         fig.add_vline(x=mean_v,   line_dash="dash", line_color="#ffd200",
                       annotation_text=f"Mean: {fmt_num(mean_v)}",
                       annotation_position="top right",
@@ -171,40 +175,41 @@ def generate_charts(df):
         fig = go.Figure()
         for i, col in enumerate(cols_for_box):
             fig.add_trace(go.Box(
-                y=df[col],
+                x=df[col], # Changed to X for horizontal box plots
                 name=col.replace("_"," ").title(),
                 marker_color=COLORS[i % len(COLORS)],
                 boxmean=True,
-                hovertemplate="<b>%{x}</b><br>Value: %{y}<extra></extra>",
+                hovertemplate="<b>%{y}</b><br>Value: %{x}<extra></extra>",
             ))
-        fix_yaxis(fig)
+        fix_xaxis(fig)
         charts.append(finalize(fig,
             "Outlier & Range Overview",
-            "Each box: median line, IQR box, whiskers = normal range, dots = outliers",
+            "Horizontal box plots for clearer range comparison",
             chart_type="distribution"))
 
     # ─────────────────────────────────────────────────────────────
-    # 5. STACKED BAR (categorical × second categorical)
+    # 5. HORIZONTAL STACKED BAR (categorical × second categorical)
     # ─────────────────────────────────────────────────────────────
     if len(useful_cats) >= 2 and numeric_cols:
         xc, cc = useful_cats[0], useful_cats[1]
         if df[xc].nunique() <= 15 and df[cc].nunique() <= 6:
             grouped = (df.groupby([xc, cc])[numeric_cols[0]].sum()
                          .reset_index()
-                         .sort_values(numeric_cols[0], ascending=False))
-            top_x = grouped[xc].value_counts().head(8).index
+                         .sort_values(numeric_cols[0], ascending=True))
+            top_x = df[xc].value_counts().head(8).index
             grouped = grouped[grouped[xc].isin(top_x)]
-            fig = px.bar(grouped, x=xc, y=numeric_cols[0], color=cc,
+            
+            fig = px.bar(grouped, y=xc, x=numeric_cols[0], color=cc,
+                         orientation='h',
                          barmode="group",
                          color_discrete_sequence=COLORS,
                          labels={xc: xc.replace("_"," ").title(),
                                  numeric_cols[0]: numeric_cols[0].replace("_"," ").title(),
                                  cc: cc.replace("_"," ").title()})
-            fix_yaxis(fig)
-            fig.update_xaxes(tickangle=-30)
+            fix_xaxis(fig)
             charts.append(finalize(fig,
                 f"{numeric_cols[0].replace('_',' ').title()} by {xc.replace('_',' ').title()} & {cc.replace('_',' ').title()}",
-                "Grouped bars to compare across two categories",
+                "Grouped horizontal bars for multi-variable comparison",
                 chart_type="categorical"))
 
     # ─────────────────────────────────────────────────────────────
@@ -214,10 +219,10 @@ def generate_charts(df):
         corr = df[numeric_cols].corr().round(2)
         fig = px.imshow(corr, text_auto=True,
                         color_continuous_scale="RdBu_r", zmin=-1, zmax=1)
-        fig.update_xaxes(tickangle=-30)
+        # Heatmap labels remain same
         charts.append(finalize(fig,
             "Correlation Between Numeric Columns",
-            "Blue = positive link, Red = negative link. Closer to ±1 = stronger relationship",
+            "Blue = positive link, Red = negative link",
             chart_type="relationship"))
 
     # ─────────────────────────────────────────────────────────────
@@ -231,19 +236,21 @@ def generate_charts(df):
             tl = None
 
         for i in range(min(2, len(numeric_cols) - 1)):
-            xc, yc = numeric_cols[i], numeric_cols[i + 1]
-            kwargs = dict(x=xc, y=yc, opacity=0.65,
+            x_sc, y_sc = numeric_cols[i], numeric_cols[i + 1]
+            kwargs = dict(x=x_sc, y=y_sc, opacity=0.65,
                           color_discrete_sequence=[COLORS[4]],
-                          labels={xc: xc.replace("_"," ").title(),
-                                  yc: yc.replace("_"," ").title()})
+                          labels={x_sc: x_sc.replace("_"," ").title(),
+                                  y_sc: y_sc.replace("_"," ").title()})
             if tl:
                 kwargs["trendline"] = tl
                 kwargs["trendline_color_override"] = "#ffd200"
             fig = px.scatter(df, **kwargs)
-            fix_yaxis(fig)
+            # Fix axes for scatter
+            fig.update_xaxes(tickformat=",", exponentformat="none")
+            fig.update_yaxes(tickformat=",", exponentformat="none")
             charts.append(finalize(fig,
-                f"{xc.replace('_',' ').title()} vs {yc.replace('_',' ').title()}",
-                "Each dot = one record. Yellow line = overall trend" if tl else "Scatter plot showing relationship",
+                f"{x_sc.replace('_',' ').title()} vs {y_sc.replace('_',' ').title()}",
+                "Scatter plot showing relationship with trendline",
                 chart_type="relationship"))
 
     # ─────────────────────────────────────────────────────────────
@@ -265,7 +272,7 @@ def generate_charts(df):
                         marker=dict(size=7, color=COLORS[5]),
                         hovertemplate="<b>%{x}</b><br>Avg: %{y:,.0f}<extra></extra>",
                     ))
-                    fix_yaxis(fig)
+                    fig.update_yaxes(tickformat=",", exponentformat="none")
                     fig.update_xaxes(title_text=col.replace("_"," ").title())
                     fig.update_yaxes(title_text=f"Avg {target.replace('_',' ').title()}")
                     charts.append(finalize(fig,
