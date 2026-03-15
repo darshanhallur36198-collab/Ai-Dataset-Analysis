@@ -201,6 +201,22 @@ body {
   letter-spacing: 0.3px;
 }
 
+.btn-primary:active { transform: scale(0.98); }
+
+.btn-mini {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #c9d1d9;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-mini:hover {
+  background: rgba(108,99,255,0.2);
+  border-color: #6c63ff;
+  color: #fff;
+}
+
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(108,99,255,0.45);

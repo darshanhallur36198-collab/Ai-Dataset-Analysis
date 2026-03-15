@@ -227,12 +227,29 @@ function renderChart(chartData, index, container, prefix = 'c') {
 
     const card = document.createElement('div');
     card.className          = 'chart-card';
-    card.dataset.chartType  = chartType;   // used by filter buttons
+    card.dataset.chartType  = chartType;
 
     const header = document.createElement('div');
-    header.className   = 'chart-header';
-    header.textContent = (chartData.layout?.title?.text || `Chart ${index + 1}`)
-                            .replace(/<[^>]+>/g, '');   // strip any HTML tags
+    header.className = 'chart-header';
+    header.style.display = 'flex';
+    header.style.justifyContent = 'space-between';
+    header.style.alignItems = 'center';
+
+    const titleSpan = document.createElement('span');
+    titleSpan.textContent = (chartData.layout?.title?.text || `Chart ${index + 1}`).replace(/<[^>]+>/g, '');
+    header.appendChild(titleSpan);
+
+    // 🔄 Rotation Button (for Bar/Box charts)
+    const canRotate = chartData.data.some(d => ['bar', 'box'].includes(d.type));
+    if (canRotate) {
+        const rotBtn = document.createElement('button');
+        rotBtn.innerHTML = '🔄 Rotate';
+        rotBtn.className = 'btn-mini';
+        rotBtn.style.fontSize = '0.7rem';
+        rotBtn.style.padding = '4px 8px';
+        rotBtn.onclick = () => toggleRotation(`${prefix}_${index}`);
+        header.appendChild(rotBtn);
+    }
 
     const plotDiv = document.createElement('div');
     plotDiv.id        = `${prefix}_${index}`;
@@ -249,7 +266,35 @@ function renderChart(chartData, index, container, prefix = 'c') {
         plot_bgcolor:  'rgba(0,0,0,0)',
         font:          { color: '#c9d1d9', family: 'Inter, Segoe UI, sans-serif' },
     };
-    Plotly.newPlot(plotDiv.id, chartData.data, layout, { responsive: true, displayModeBar: false });
+    Plotly.newPlot(plotDiv.id, JSON.parse(JSON.stringify(chartData.data)), layout, { responsive: true, displayModeBar: false });
+}
+
+// ─── Swap X and Y on the fly ───────────────────────────────────
+function toggleRotation(id) {
+    const el = document.getElementById(id);
+    const data = el.data;
+    const layout = el.layout;
+
+    data.forEach(trace => {
+        if (['bar', 'box', 'histogram'].includes(trace.type)) {
+            // Swap Data
+            const oldX = trace.x;
+            const oldY = trace.y;
+            trace.x = oldY;
+            trace.y = oldX;
+            // Swap Orientation
+            trace.orientation = (trace.orientation === 'h') ? 'v' : 'h';
+        }
+    });
+
+    // Swap Axis Titles
+    const oldXTitle = layout.xaxis.title.text;
+    const oldYTitle = layout.yaxis.title.text;
+    Plotly.relayout(id, {
+        'xaxis.title.text': oldYTitle,
+        'yaxis.title.text': oldXTitle
+    });
+    Plotly.redraw(id);
 }
 
 // ─── Dashboard charts (first 6 as preview) ────────────────────
