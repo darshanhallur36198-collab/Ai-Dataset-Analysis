@@ -51,19 +51,29 @@ def generate_charts(df):
             fig = px.pie(df, names=col, hole=0.4, color_discrete_sequence=px.colors.qualitative.Pastel)
             charts.append(finalize(fig, f"Population Split: {col}"))
 
-    # 3. Relationship (Scatter Matrix/Pair Plot)
+    # 3. Relationship (Scatter + Heatmap)
     if len(numeric_cols) >= 2:
-        # Correlation Heatmap (Fixed)
+        # Correlation Heatmap
         corr = df[numeric_cols].corr()
         fig = px.imshow(corr, text_auto=".2f", color_continuous_scale="RdBu_r")
         charts.append(finalize(fig, "Statistical Correlation Matrix"))
         
-        # Bivariate Scatters
-        for i in range(min(2, len(numeric_cols)-1)):
-            fig = px.scatter(df, x=numeric_cols[i], y=numeric_cols[i+1], 
-                             trendline="ols", trendline_color_override="red",
-                             color_discrete_sequence=[COLORS[2]])
+        # Bivariate Scatters – try OLS trendline, fall back to none
+        try:
+            import statsmodels  # noqa: F401
+            trendline = "ols"
+        except ImportError:
+            trendline = None
+
+        for i in range(min(2, len(numeric_cols) - 1)):
+            kwargs = dict(x=numeric_cols[i], y=numeric_cols[i + 1],
+                          color_discrete_sequence=[COLORS[2]])
+            if trendline:
+                kwargs['trendline'] = trendline
+                kwargs['trendline_color_override'] = 'red'
+            fig = px.scatter(df, **kwargs)
             charts.append(finalize(fig, f"Relational: {numeric_cols[i]} vs {numeric_cols[i+1]}"))
+
 
     # 4. Sequential/Trend Analysis (If date-like exists)
     for col in cat_cols + numeric_cols:
