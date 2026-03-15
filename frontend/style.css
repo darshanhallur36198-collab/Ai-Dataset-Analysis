@@ -317,7 +317,84 @@ body {
 
 @media (max-width: 1000px) {
   .sidebar { width: 70px; padding: 15px 8px; }
-  .logo span, .nav-item span { display: none; }
+  .logo span, .nav-item span:not(.nav-icon) { display: none; }
   .main-content { margin-left: 70px; padding: 20px; }
   .chart-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Page Sections (SPA routing) ── */
+.page-section { display: none; }
+.page-section.active-section { display: block; }
+
+/* ── Empty state placeholder ── */
+.empty-state {
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 50px 20px;
+  font-size: 1rem;
+  background: rgba(255,255,255,0.02);
+  border-radius: 12px;
+  border: 1px dashed var(--border-color);
+}
+
+/* ── Filter buttons (Graphs section) ── */
+.filter-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  padding: 7px 18px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-btn:hover,
+.filter-btn.active {
+  background: rgba(108,99,255,0.25);
+  border-color: #6c63ff;
+  color: #a99dff;
+}
+
+/* ── Settings rows ── */
+.setting-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.setting-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 600;
+}
+
+.setting-input {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  max-width: 400px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.setting-input:focus { border-color: #6c63ff; }
+
+/* ── Green Analyze button variant ── */
+.btn-green {
+  background: var(--gradient-3) !important;
+  box-shadow: 0 4px 18px rgba(17,153,142,0.35) !important;
+}
+
+.btn-green:hover:not(:disabled) {
+  box-shadow: 0 8px 28px rgba(17,153,142,0.5) !important;
+}
+
+/* ── Nav icon spacing ── */
+.nav-icon { font-size: 1.1rem; }
