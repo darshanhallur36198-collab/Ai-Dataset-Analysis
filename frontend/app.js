@@ -7,45 +7,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle file selection
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) {
-            fileNameDisplay.textContent = e.target.files[0].name;
-            fileNameDisplay.style.color = 'var(--text-primary)';
+            fileNameDisplay.textContent = `Selected: ${e.target.files[0].name}`;
             analyzeBtn.disabled = false;
         } else {
-            fileNameDisplay.textContent = 'Drag & Drop CSV, or Click to Browse';
-            fileNameDisplay.style.color = 'var(--text-secondary)';
+            fileNameDisplay.textContent = '';
             analyzeBtn.disabled = true;
         }
     });
 
-    // Drag and drop events
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, preventDefaults, false);
+        dropZone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        }, false);
     });
 
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-
     ['dragenter', 'dragover'].forEach(eventName => {
-        dropZone.addEventListener(eventName, () => {
-            dropZone.classList.add('dragover');
-        }, false);
+        dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
     });
 
     ['dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, () => {
-            dropZone.classList.remove('dragover');
-        }, false);
+        dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
     });
 
     dropZone.addEventListener('drop', (e) => {
-        let dt = e.dataTransfer;
-        let files = dt.files;
-        
+        let files = e.dataTransfer.files;
         if (files.length > 0) {
             fileInput.files = files;
-            // Trigger change event manually
             const event = new Event('change');
             fileInput.dispatchEvent(event);
         }
@@ -59,31 +47,23 @@ async function upload() {
     const resultElement = document.getElementById("result");
     const btn = document.getElementById("analyze-btn");
     
-    // Dashboard Elements
+    // Professional UI Elements
+    const kpiBox = document.getElementById("kpi-box");
     const chartContainer = document.getElementById("chart-container");
-    const chartsWrapper = document.getElementById("charts-wrapper");
-    const mlContainer = document.getElementById("ml-container");
-    const mlResult = document.getElementById("ml-result");
     const aiAssistant = document.getElementById("ai-assistant");
     const aiBubbles = document.getElementById("ai-bubbles");
+    const mlContainer = document.getElementById("ml-container");
+    const mlResult = document.getElementById("ml-result");
 
     if (!fileInput.files || fileInput.files.length === 0) return;
 
-    let file = fileInput.files[0];
     let formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", fileInput.files[0]);
 
-    // Reset UI
+    // UI Reset
     btn.disabled = true;
     loader.style.display = "block";
-    resultContainer.style.display = "none";
-    chartsWrapper.style.display = "none";
-    mlContainer.style.display = "none";
-    aiAssistant.style.display = "none";
-    chartContainer.innerHTML = "";
-    mlResult.innerHTML = "";
-    aiBubbles.innerHTML = "";
-
+    
     try {
         let response = await fetch("http://127.0.0.1:8000/upload", {
             method: "POST",
@@ -91,77 +71,71 @@ async function upload() {
         });
         
         let result = await response.json();
+        if (!response.ok) throw new Error(result.message || "Analysis failed");
+
+        // 1. Populate KPIs
+        kpiBox.style.display = "grid";
+        document.getElementById("kpi-rows").textContent = result.analysis.rows.toLocaleString();
+        document.getElementById("kpi-cols").textContent = result.analysis.columns;
+        document.getElementById("kpi-insights").textContent = result.analysis.insights.length;
         
-        if (!response.ok) {
-            throw new Error(result.message || "Failed to analyze data");
-        }
+        // Simple health score logic
+        const missingCount = Object.values(result.analysis.missing).reduce((a, b) => a + b, 0);
+        const health = Math.max(0, 100 - (missingCount / (result.analysis.rows * result.analysis.columns) * 100));
+        document.getElementById("kpi-health").textContent = `${Math.round(health)}%`;
 
-        // Display AI Assistant Bubbles
-        if (result.analysis && result.analysis.insights) {
-            aiAssistant.style.display = "block";
-            result.analysis.insights.forEach((insight, i) => {
-                setTimeout(() => {
-                    const bubble = document.createElement("div");
-                    bubble.className = "bubble";
-                    bubble.textContent = insight;
-                    aiBubbles.appendChild(bubble);
-                }, i * 400);
-            });
-        }
+        // 2. AI Assistant Narrative
+        aiAssistant.style.display = "block";
+        aiBubbles.innerHTML = "";
+        result.analysis.insights.forEach((insight, i) => {
+            setTimeout(() => {
+                const bubble = document.createElement("div");
+                bubble.className = "bubble";
+                bubble.textContent = insight;
+                aiBubbles.appendChild(bubble);
+            }, i * 300);
+        });
 
-        // 1. Display Basic Stats Analysis
-        resultElement.innerText = JSON.stringify(result.analysis || result, null, 2);
-        
-        // 2. Render Machine Learning Prediction Engine
-        if (result.ml_prediction) {
-            mlContainer.style.display = "block";
-            if (result.ml_prediction.error) {
-                 mlResult.innerHTML = `<p style="color:#ff7b72">${result.ml_prediction.error}</p>`;
-            } else {
-                 mlResult.innerHTML = `
-                    <div style="background: rgba(83, 155, 245, 0.1); padding: 15px; border-radius: 8px; border-left: 4px solid var(--accent-color);">
-                        <p><strong>Predicted Target:</strong> ${result.ml_prediction.target_column}</p>
-                        <p><strong>Model:</strong> ${result.ml_prediction.model_type}</p>
-                        <p><strong>Accuracy (R2 Score):</strong> <span style="color:#a5d6ff; font-weight:bold;">${result.ml_prediction.r2_score}</span></p>
-                    </div>
-                 `;
-            }
-        }
-
-        // 3. Render Plotly Charts (AI Dashboard)
-        if (result.charts && result.charts.length > 0) {
-            chartsWrapper.style.display = "block";
-            
+        // 3. Render Dashboard Charts (Wrapped in Cards)
+        chartContainer.innerHTML = "";
+        if (result.charts) {
             result.charts.forEach((chartData, index) => {
-                let div = document.createElement("div");
-                div.id = "plotly-chart-" + index;
-                div.className = "plotly-box";
-                chartContainer.appendChild(div);
+                const card = document.createElement("div");
+                card.className = "chart-card";
+                card.innerHTML = `<div class="chart-header">📊 ${chartData.layout.title.text || 'Visualization'}</div>`;
+                
+                const plotDiv = document.createElement("div");
+                plotDiv.id = `chart-${index}`;
+                plotDiv.className = "plotly-box";
+                card.appendChild(plotDiv);
+                chartContainer.appendChild(card);
 
-                Plotly.newPlot(
-                    div.id,
-                    chartData.data,
-                    chartData.layout,
-                    {responsive: true}
-                );
+                Plotly.newPlot(plotDiv.id, chartData.data, chartData.layout, {responsive: true});
             });
         }
-        
-        if (result.status === "error") {
-            resultElement.style.color = "#ff7b72";
+
+        // 4. ML Predictions
+        if (result.ml_prediction && !result.ml_prediction.error) {
+            mlContainer.style.display = "block";
+            mlResult.innerHTML = `
+                <div style="padding: 10px; border-left: 4px solid var(--accent-color); background: rgba(88, 166, 255, 0.05); border-radius: 4px;">
+                    <p><strong>Predicted Target:</strong> ${result.ml_prediction.target_column}</p>
+                    <p><strong>Model:</strong> ${result.ml_prediction.model_type}</p>
+                    <p><strong>Accuracy (R2):</strong> <span style="color: var(--accent-color); font-weight: bold;">${result.ml_prediction.r2_score}</span></p>
+                </div>
+            `;
         } else {
-            resultElement.style.color = "#a5d6ff";
+            mlContainer.style.display = "none";
         }
+
+        // 5. Raw Stats
+        resultElement.textContent = JSON.stringify(result.analysis, null, 2);
+        resultContainer.style.display = "block";
         
     } catch (error) {
-        resultElement.innerText = `Error: ${error.message}`;
-        resultElement.style.color = "#ff7b72";
+        alert(error.message);
     } finally {
         loader.style.display = "none";
-        resultContainer.style.display = "block";
         btn.disabled = false;
-        
-        // Scroll to results
-        resultContainer.scrollIntoView({ behavior: 'smooth' });
     }
 }

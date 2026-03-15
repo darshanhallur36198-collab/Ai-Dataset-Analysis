@@ -3,57 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Data Analyst</title>
+    <title>AI Autonomous Data Analyst | Professional BI</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Plotly library for dynamic charts -->
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 </head>
 <body>
-    <h2>AI Data Analyst</h2>
-    <div class="subtitle">Autonomous Data Cleaning & Statistical Generation</div>
-
-    <div class="card">
-        <label for="dataset" class="upload-area" id="drop-zone">
-            <span class="file-label" id="file-name">Drag & Drop CSV, or Click to Browse</span>
-            <input type="file" id="dataset" accept=".csv, .xlsx">
-        </label>
-        
-        <button id="analyze-btn" onclick="upload()" disabled>Analyze Dataset</button>
-        
-        <div class="loading" id="loader">
-            <div class="spinner"></div> Processing intelligence...
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="logo">
+            📊 <span>AI Analyst</span>
         </div>
+        <ul class="nav-links">
+            <li class="nav-item active"><span>Dashboard</span></li>
+            <li class="nav-item"><span>Data Cleaning</span></li>
+            <li class="nav-item"><span>ML Predictions</span></li>
+            <li class="nav-item"><span>Reports</span></li>
+            <li class="nav-item"><span>Settings</span></li>
+        </ul>
     </div>
 
-    <!-- AI Assistant Section -->
-    <div id="ai-assistant" class="result-card" style="display: none; margin-top: 20px; border-left: 5px solid #d2a8ff;">
-        <div class="result-header">✨ AI Data Assistant</div>
-        <div id="ai-bubbles" class="chat-container">
-            <!-- Insights bubbles will appear here -->
-        </div>
-    </div>
+    <!-- Main Dashboard Area -->
+    <div class="main-content">
+        <header class="dashboard-header">
+            <div>
+                <h1>Data Analytics Overview</h1>
+                <p style="color: var(--text-secondary);">Autonomous Insights & Pattern Detection</p>
+            </div>
+            <div id="loader" class="loading">
+                <div class="spinner"></div> Processing...
+            </div>
+        </header>
 
-    <!-- BI Dashboard Output -->
-    <div id="result-container">
-        
-        <!-- Summary Stats Area -->
-        <div class="result-card">
-            <div class="result-header">📊 Dataset Summary (AI Analyzed)</div>
-            <pre id="result">Results will appear here...</pre>
+        <!-- KPI Section -->
+        <div class="kpi-container" id="kpi-box" style="display: none;">
+            <div class="kpi-card">
+                <span class="kpi-label">Total Rows</span>
+                <span id="kpi-rows" class="kpi-val">0</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Variations</span>
+                <span id="kpi-cols" class="kpi-val">0</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Data Health</span>
+                <span id="kpi-health" class="kpi-val">100%</span>
+            </div>
+            <div class="kpi-card">
+                <span class="kpi-label">Insights</span>
+                <span id="kpi-insights" class="kpi-val">0</span>
+            </div>
         </div>
 
-        <!-- Machine Learning Area -->
-        <div class="result-card ml-card" id="ml-container" style="display: none; margin-top: 20px;">
-            <div class="result-header">🤖 Machine Learning Prediction Engine</div>
-            <div id="ml-result"></div>
+        <!-- Action / Upload Bar -->
+        <div class="upload-sect" id="drop-zone">
+            <h3>Upload New Dataset</h3>
+            <p style="color: var(--text-secondary); margin: 10px 0;">Drag & drop CSV or XLSX files here</p>
+            <input type="file" id="dataset" accept=".csv, .xlsx" style="display:none">
+            <button class="btn-primary" onclick="document.getElementById('dataset').click()">Browse Files</button>
+            <p id="file-name" style="margin-top: 10px; font-weight: 500;"></p>
+            <br>
+            <button id="analyze-btn" class="btn-primary" onclick="upload()" disabled style="background: var(--accent-secondary); width: 200px;">Run AI Analysis</button>
         </div>
 
-        <!-- Visual Analytics Area (Plotly) -->
-        <div class="result-card chart-card" id="charts-wrapper" style="display: none; margin-top: 20px;">
-            <div class="result-header">📈 AI Visual Analytics Dashboard</div>
-            <div id="chart-container" class="chart-grid"></div>
-        </div>
+        <!-- Dashboard Result Rows -->
+        <div id="result-container" style="display: none;">
+            
+            <!-- AI Assistant Narrative -->
+            <div id="ai-assistant" class="assistant-panel">
+                <div class="chart-header">✨ AI Narrative Insights</div>
+                <div id="ai-bubbles"></div>
+            </div>
 
+            <!-- Graphs Grid -->
+            <div id="chart-container" class="chart-grid" style="margin-top: 30px;">
+                <!-- Chart Cards will be injected here -->
+            </div>
+
+            <!-- ML Analysis Panel -->
+            <div class="chart-card" id="ml-container" style="margin-top: 30px;">
+                <div class="chart-header">🤖 Predictive Insights</div>
+                <div id="ml-result"></div>
+            </div>
+
+            <!-- Raw Data Preview -->
+            <div class="chart-card" style="margin-top: 30px;">
+                <div class="chart-header">📑 Raw Data Statistics</div>
+                <pre id="result"></pre>
+            </div>
+        </div>
     </div>
 
     <script src="app.js"></script>

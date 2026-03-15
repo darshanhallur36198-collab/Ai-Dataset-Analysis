@@ -7,72 +7,80 @@ import json
 def generate_charts(df):
     charts = []
     
-    # Configuration for all charts
-    CHART_WIDTH = 800
-    CHART_HEIGHT = 500
+    # Dashboard Config
+    CHART_WIDTH = 750
+    CHART_HEIGHT = 450
     THEME = "plotly_dark"
+    COLORS = px.colors.qualitative.G10
     
-    # 0. Intelligent Column Filtering
-    numeric_cols = df.select_dtypes(include=["int64", "float64"]).columns.tolist()
+    numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
     cat_cols = df.select_dtypes(include=["object", "category"]).columns.tolist()
     
-    # Skip ID-like columns (high cardinality)
-    useful_cats = [col for col in cat_cols if 1 < df[col].nunique() < 20]
-    
-    def apply_layout(fig, title):
+    def finalize(fig, title):
         fig.update_layout(
-            width=CHART_WIDTH,
-            height=CHART_HEIGHT,
-            title=dict(text=title, x=0.5, xanchor='center'),
             template=THEME,
+            title=dict(text=title, x=0.5, xanchor='center', font=dict(size=18)),
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)',
-            margin=dict(l=50, r=50, b=80, t=80)
+            margin=dict(l=40, r=40, b=60, t=80),
+            hovermode="x unified"
         )
-        return fig
+        return json.loads(fig.to_json())
 
-    # 1. Histograms & Box Plots for Numeric Data
-    for col in numeric_cols[:2]: # Top 2 numeric columns
-        # Histogram
-        fig_hist = px.histogram(df, x=col, title=f"Distribution of {col}", 
-                               color_discrete_sequence=['#539bf5'], marginal="rug")
-        charts.append(json.loads(apply_layout(fig_hist, f"Distribution Analysis: {col}").to_json()))
+    # 1. Distribution Pair (Top Numeric)
+    for col in numeric_cols[:4]:
+        if df[col].nunique() > 1:
+            # Histogram with Density
+            fig = px.histogram(df, x=col, marginal="box", color_discrete_sequence=[COLORS[0]])
+            charts.append(finalize(fig, f"Distribution: {col}"))
+            
+            # Violin Plot
+            fig = px.violin(df, y=col, box=True, points="all", color_discrete_sequence=[COLORS[1]])
+            charts.append(finalize(fig, f"Detail Analysis: {col}"))
+
+    # 2. Categorical Breakdown
+    for col in [c for c in cat_cols if 1 < df[c].nunique() < 15][:3]:
+        # Bar Chart
+        counts = df[col].value_counts().reset_index().head(10)
+        counts.columns = [col, 'Value']
+        fig = px.bar(counts, x=col, y='Value', color=col, color_discrete_sequence=COLORS)
+        charts.append(finalize(fig, f"Category Comparison: {col}"))
         
-        # Box Plot
-        fig_box = px.box(df, y=col, title=f"Statistical Range: {col}", 
-                        color_discrete_sequence=['#79c0ff'])
-        charts.append(json.loads(apply_layout(fig_box, f"Outlier & Range Analysis: {col}").to_json()))
+        # Pie Chart
+        if df[col].nunique() <= 8:
+            fig = px.pie(df, names=col, hole=0.4, color_discrete_sequence=px.colors.qualitative.Pastel)
+            charts.append(finalize(fig, f"Population Split: {col}"))
 
-    # 2. Scatter Plot (if at least 2 numeric columns exist)
+    # 3. Relationship (Scatter Matrix/Pair Plot)
     if len(numeric_cols) >= 2:
-        fig_scatter = px.scatter(df, x=numeric_cols[0], y=numeric_cols[1], 
-                               title=f"Relationship: {numeric_cols[0]} vs {numeric_cols[1]}",
-                               color_discrete_sequence=['#d2a8ff'], opacity=0.7)
-        charts.append(json.loads(apply_layout(fig_scatter, "Bivariate Analysis (Scatter Plot)").to_json()))
+        # Correlation Heatmap (Fixed)
+        corr = df[numeric_cols].corr()
+        fig = px.imshow(corr, text_auto=".2f", color_continuous_scale="RdBu_r")
+        charts.append(finalize(fig, "Statistical Correlation Matrix"))
+        
+        # Bivariate Scatters
+        for i in range(min(2, len(numeric_cols)-1)):
+            fig = px.scatter(df, x=numeric_cols[i], y=numeric_cols[i+1], 
+                             trendline="ols", trendline_color_override="red",
+                             color_discrete_sequence=[COLORS[2]])
+            charts.append(finalize(fig, f"Relational: {numeric_cols[i]} vs {numeric_cols[i+1]}"))
 
-    # 3. Bar charts for Categorical Data
-    for col in useful_cats[:1]:
-        val_counts = df[col].value_counts().reset_index().head(10)
-        val_counts.columns = [col, 'Count']
-        fig_bar = px.bar(val_counts, x=col, y='Count', 
-                        title=f"Top 10 Categories in {col}", 
-                        color='Count', color_continuous_scale='Blues')
-        charts.append(json.loads(apply_layout(fig_bar, f"Category Frequency: {col}").to_json()))
+    # 4. Sequential/Trend Analysis (If date-like exists)
+    for col in cat_cols + numeric_cols:
+        if "year" in col.lower() or "date" in col.lower() or "month" in col.lower():
+            try:
+                temp_df = df.copy()
+                if df[col].dtype == 'object':
+                    temp_df[col] = pd.to_datetime(df[col], errors='coerce')
+                
+                if not temp_df[col].isnull().all():
+                    temp_df = temp_df.sort_values(by=col)
+                    # Aggregated trend
+                    if numeric_cols:
+                        trend = temp_df.groupby(col)[numeric_cols[0]].mean().reset_index()
+                        fig = px.line(trend, x=col, y=numeric_cols[0], markers=True)
+                        charts.append(finalize(fig, f"Time Series Trend: {numeric_cols[0]} over {col}"))
+            except:
+                pass
 
-    # 4. Pie Chart
-    for col in cat_cols:
-        if 2 <= df[col].nunique() <= 8:
-            fig_pie = px.pie(df, names=col, title=f"Proportional Breakdown: {col}", 
-                           hole=0.4, color_discrete_sequence=px.colors.qualitative.Pastel)
-            charts.append(json.loads(apply_layout(fig_pie, f"Composition Analysis: {col}").to_json()))
-            break
-
-    # 5. Correlation Heatmap
-    if len(numeric_cols) >= 2:
-        corr_matrix = df[numeric_cols].corr()
-        fig_heatmap = px.imshow(corr_matrix, text_auto=True, 
-                               title="Feature Correlation Heatmap",
-                               color_continuous_scale="RdBu_r", origin="lower")
-        charts.append(json.loads(apply_layout(fig_heatmap, "Correlation Matrix (Heatmap)").to_json()))
-
-    return charts
+    return charts[:20] # Limit to 20 best graphs
