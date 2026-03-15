@@ -56,16 +56,17 @@
 
         <!-- Action / Upload Bar -->
         <div class="upload-sect" id="drop-zone">
-            <h3 style="color: var(--text-primary); margin-bottom: 10px;">📁 Upload New Dataset</h3>
-            <p style="color: var(--text-secondary); margin-bottom: 20px;">Drag & drop CSV or XLSX files here</p>
+            <h3 style="color: var(--text-primary); margin-bottom: 8px;">📁 Upload Your Dataset</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 5px;">Drag & drop or browse your file</p>
+            <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 20px;">Supported: CSV, TSV, XLSX, XLS, JSON, Parquet, ODS</p>
             
-            <input type="file" id="dataset" accept=".csv, .xlsx" style="display:none">
+            <input type="file" id="dataset" accept=".csv,.tsv,.txt,.xlsx,.xls,.json,.parquet,.ods" style="display:none">
             <button class="btn-primary" onclick="document.getElementById('dataset').click()">🗂 Browse Files</button>
             
-            <p id="file-name" style="margin-top: 15px; font-weight: 500; color: var(--accent-color);"></p>
+            <p id="file-name" style="margin-top: 15px; font-weight: 600; color: #9d95ff;"></p>
             
             <button id="analyze-btn" class="btn-primary" onclick="upload()" disabled
-                style="margin-top: 15px; background: var(--accent-secondary); min-width: 200px; display: block; margin-left: auto; margin-right: auto;">
+                style="margin-top: 15px; min-width: 220px; display: block; margin-left: auto; margin-right: auto;">
                 🚀 Run AI Analysis
             </button>
         </div>
