@@ -239,17 +239,27 @@ function renderChart(chartData, index, container, prefix = 'c') {
     titleSpan.textContent = (chartData.layout?.title?.text || `Chart ${index + 1}`).replace(/<[^>]+>/g, '');
     header.appendChild(titleSpan);
 
-    // 🔄 Rotation Button (for Bar/Box charts)
+    // 🔄 Rotation & 📥 Download Buttons
+    const btnGroup = document.createElement('div');
+    btnGroup.style.display = 'flex';
+    btnGroup.style.gap = '8px';
+
     const canRotate = chartData.data.some(d => ['bar', 'box'].includes(d.type));
     if (canRotate) {
         const rotBtn = document.createElement('button');
         rotBtn.innerHTML = '🔄 Rotate';
         rotBtn.className = 'btn-mini';
-        rotBtn.style.fontSize = '0.7rem';
-        rotBtn.style.padding = '4px 8px';
         rotBtn.onclick = () => toggleRotation(`${prefix}_${index}`);
-        header.appendChild(rotBtn);
+        btnGroup.appendChild(rotBtn);
     }
+
+    const dlBtn = document.createElement('button');
+    dlBtn.innerHTML = '📥 Download';
+    dlBtn.className = 'btn-mini';
+    dlBtn.onclick = () => downloadChart(`${prefix}_${index}`, titleSpan.textContent);
+    btnGroup.appendChild(dlBtn);
+
+    header.appendChild(btnGroup);
 
     const plotDiv = document.createElement('div');
     plotDiv.id        = `${prefix}_${index}`;
@@ -267,6 +277,31 @@ function renderChart(chartData, index, container, prefix = 'c') {
         font:          { color: '#c9d1d9', family: 'Inter, Segoe UI, sans-serif' },
     };
     Plotly.newPlot(plotDiv.id, JSON.parse(JSON.stringify(chartData.data)), layout, { responsive: true, displayModeBar: false });
+}
+
+// ─── Download Chart as PNG ─────────────────────────────────────
+function downloadChart(id, title) {
+    const el = document.getElementById(id);
+    Plotly.downloadImage(el, {
+        format: 'png',
+        width: 1200,
+        height: 800,
+        filename: title.trim().replace(/\s+/g, '_') || 'chart'
+    });
+}
+
+// ─── Download Full Report as JSON ──────────────────────────────
+function downloadReport() {
+    if (!analysisData) return alert('No report available to download.');
+    
+    const dataStr = JSON.stringify(analysisData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = 'ai_data_report.json';
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
 }
 
 // ─── Swap X and Y on the fly ───────────────────────────────────
