@@ -161,12 +161,16 @@
                 </div>
                 <div class="setting-row">
                     <label class="setting-label">Theme</label>
-                    <select id="setting-theme" class="setting-input">
-                        <option value="plotly_dark" selected>Dark (Recommended)</option>
-                        <option value="plotly">Light</option>
-                        <option value="ggplot2">GGPlot</option>
-                        <option value="seaborn">Seaborn</option>
-                    </select>
+                    <div style="position:relative; max-width:400px">
+                        <select id="setting-theme" class="setting-input" style="width:100%; cursor:pointer; padding-right:36px">
+                            <option value="plotly_dark" selected>🌙 Dark (Recommended)</option>
+                            <option value="plotly">☀️ Light</option>
+                            <option value="ggplot2">📊 GGPlot</option>
+                            <option value="seaborn">🎨 Seaborn</option>
+                            <option value="simple_white">⬜ Simple White</option>
+                        </select>
+                        <span style="position:absolute; right:12px; top:50%; transform:translateY(-50%); pointer-events:none; color:#9d95ff">▼</span>
+                    </div>
                 </div>
                 <button class="btn-primary" style="width:160px; margin-top:10px" onclick="saveSettings()">💾 Save Settings</button>
                 <p id="settings-msg" style="color:#38ef7d; font-size:0.9rem; display:none">✅ Settings saved!</p>

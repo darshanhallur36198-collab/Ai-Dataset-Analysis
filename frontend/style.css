@@ -382,9 +382,24 @@ body {
   max-width: 400px;
   outline: none;
   transition: border-color 0.2s;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
 .setting-input:focus { border-color: #6c63ff; }
+
+/* Force option items to be dark even on Windows native rendering */
+.setting-input option {
+  background-color: #1a1f2e;
+  color: #c9d1d9;
+  padding: 10px;
+}
+
+.setting-input option:hover,
+.setting-input option:checked {
+  background-color: #6c63ff;
+  color: #ffffff;
+}
 
 /* ── Green Analyze button variant ── */
 .btn-green {
