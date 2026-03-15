@@ -69,20 +69,25 @@
 
     <!-- ══ SECTION: DASHBOARD ══════════════════════════════════════ -->
     <section id="section-dashboard" class="page-section active-section">
-        <!-- Upload Zone -->
+        <!-- Upload Zone - AUTO analysis on file pick -->
         <div class="upload-sect" id="drop-zone">
-            <h3>📁 Upload Your Dataset</h3>
-            <p>Drag & drop or click to browse</p>
-            <p style="font-size:0.78rem; color:var(--text-secondary); margin-top:4px">
-                Supported: CSV &bull; TSV &bull; XLSX &bull; XLS &bull; JSON &bull; Parquet &bull; ODS
+            <div class="upload-icon">⬆️</div>
+            <h3>Drop Your Dataset Here</h3>
+            <p>Or click to browse — analysis starts <strong style="color:#9d95ff">automatically</strong></p>
+            <p style="font-size:0.78rem; color:var(--text-secondary); margin-top:6px">
+                CSV &bull; TSV &bull; XLSX &bull; XLS &bull; JSON &bull; Parquet &bull; ODS
             </p>
             <input type="file" id="dataset" accept=".csv,.tsv,.txt,.xlsx,.xls,.json,.parquet,.ods" style="display:none">
-            <button class="btn-primary" style="margin-top:18px" onclick="document.getElementById('dataset').click()">🗂 Browse Files</button>
-            <p id="file-name" style="margin-top:12px; font-weight:600; color:#9d95ff;"></p>
-            <button id="analyze-btn" class="btn-primary btn-green" onclick="upload()" disabled
-                style="margin-top:14px; min-width:220px; display:block; margin-left:auto; margin-right:auto">
-                🚀 Run AI Analysis
+            <button class="btn-primary" style="margin-top:20px" onclick="document.getElementById('dataset').click()">
+                📂 Choose File
             </button>
+            <p id="file-name" style="margin-top:14px; font-weight:600; color:#9d95ff;"></p>
+
+            <!-- Progress Bar -->
+            <div id="progress-wrap" style="display:none; margin-top:18px">
+                <div id="progress-bar" class="progress-bar"></div>
+                <p id="progress-label" class="progress-label">Loading dataset…</p>
+            </div>
         </div>
 
         <!-- AI Insight Bubbles -->
