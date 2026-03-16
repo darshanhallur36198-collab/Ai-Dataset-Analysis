@@ -21,14 +21,8 @@ function saveSettings() {
 
     // ── Re-render all open charts with the new theme ──────────
     if (analysisData && analysisData.charts) {
-        ['dash', 'graph'].forEach(prefix => {
-            analysisData.charts.forEach((_, i) => {
-                const el = document.getElementById(`${prefix}_${i}`);
-                if (el) {
-                    Plotly.relayout(el, { template: getSettings().theme });
-                }
-            });
-        });
+        populateDashboardCharts(analysisData.charts);
+        populateGraphsSection(analysisData.charts);
     }
 
     const msg = document.getElementById('settings-msg');
@@ -183,7 +177,7 @@ async function runAnalysis(file) {
     populateGraphsSection(result.charts || []);
     populateCleaningSection(result.analysis);
     populateMLSection(result.ml_prediction);
-    document.getElementById('result').textContent = JSON.stringify(result.analysis, null, 2);
+    populateReportsSection(result.analysis);
 
     // Auto-scroll to results
     document.getElementById('ai-assistant').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -271,11 +265,33 @@ function renderChart(chartData, index, container, prefix = 'c') {
 
     const layout = {
         ...chartData.layout,
-        template:      settings.theme,
-        paper_bgcolor: 'rgba(0,0,0,0)',
-        plot_bgcolor:  'rgba(0,0,0,0)',
-        font:          { color: '#c9d1d9', family: 'Inter, Segoe UI, sans-serif' },
+        template: settings.theme,
     };
+
+    if (settings.theme === 'plotly_dark') {
+        layout.paper_bgcolor = 'rgba(0,0,0,0)';
+        layout.plot_bgcolor  = 'rgba(0,0,0,0)';
+        layout.font          = { color: '#c9d1d9', family: 'Inter, Segoe UI, sans-serif' };
+    } else {
+        // Remove strictly-enforced dark mode rules from backend layout overrides
+        delete layout.paper_bgcolor;
+        delete layout.plot_bgcolor;
+        layout.paper_bgcolor = '#ffffff';
+        layout.font = { color: '#333333', family: 'Inter, Segoe UI, sans-serif' };
+        
+        // Make the chart card light to visibly match the bright chart
+        card.style.background = 'rgba(255, 255, 255, 0.95)';
+        card.style.borderColor = '#e1e4e8';
+        card.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
+        header.style.borderBottomColor = '#eaeaea';
+        titleSpan.style.color = '#111111';
+        Array.from(btnGroup.children).forEach(btn => {
+            btn.style.borderColor = '#ccc';
+            btn.style.color = '#444';
+            btn.style.background = '#f5f5f5';
+        });
+    }
+
     Plotly.newPlot(plotDiv.id, JSON.parse(JSON.stringify(chartData.data)), layout, { responsive: true, displayModeBar: false });
 }
 
@@ -428,6 +444,65 @@ function populateMLSection(ml) {
         <div style="margin-top:18px; padding:14px 18px; background:rgba(255,255,255,0.03); border-radius:10px; font-size:0.88rem; color:var(--text-secondary)">
             <strong style="color:var(--text-primary)">Features used: </strong>${(ml.features_used || []).join(', ') || 'all numeric columns'}
         </div>`;
+}
+
+// ─── Reports section ─────────────────────────────────────────────
+function populateReportsSection(analysis) {
+    const el = document.getElementById('result');
+    if (!analysis || !analysis.summary) {
+        el.innerHTML = '<div class="empty-state">No statistics available.</div>';
+        return;
+    }
+
+    const summary = analysis.summary;
+    const columns = Object.keys(summary);
+    if (columns.length === 0) {
+        el.innerHTML = '<div class="empty-state">No numeric columns found for statistics.</div>';
+        return;
+    }
+
+    const statKeys = new Set();
+    columns.forEach(col => {
+        if (summary[col] && typeof summary[col] === 'object') {
+            Object.keys(summary[col]).forEach(k => statKeys.add(k));
+        }
+    });
+    const statsList = Array.from(statKeys);
+
+    let thead = `
+        <thead>
+            <tr style="background:rgba(108,99,255,0.12); border-bottom: 2px solid rgba(108,99,255,0.3);">
+                <th style="padding:14px 18px; text-align:left; color:#9d95ff; font-weight:700; font-size: 0.95rem;">Feature</th>
+                ${statsList.map(stat => `<th style="padding:14px 18px; text-align:right; color:#9d95ff; font-weight:700; font-size: 0.95rem; text-transform:capitalize;">${stat}</th>`).join('')}
+            </tr>
+        </thead>`;
+
+    let tbody = `<tbody>`;
+    columns.forEach(col => {
+        let statsObj = summary[col];
+        if (statsObj && typeof statsObj === 'object') {
+            tbody += `<tr style="border-bottom:1px solid rgba(255,255,255,0.05); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">
+                <td style="padding:14px 18px; color:var(--text-primary); font-weight: 600; white-space: nowrap;">${col}</td>
+                ${statsList.map(stat => {
+                    let val = statsObj[stat];
+                    if (typeof val === 'number') {
+                        val = Number.isInteger(val) ? val.toLocaleString() : parseFloat(val).toFixed(2).replace(/\\B(?=(\\d{3})+(?!\\d))/g, ",");
+                    }
+                    return `<td style="padding:14px 18px; text-align:right; color:var(--text-secondary)">${val !== undefined && val !== null ? val : '-'}</td>`;
+                }).join('')}
+            </tr>`;
+        }
+    });
+    tbody += `</tbody>`;
+
+    el.innerHTML = `
+        <div style="overflow-x: auto; background: rgba(30, 30, 35, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+            <table style="width:100%; border-collapse:collapse; font-size:0.95rem;">
+                ${thead}
+                ${tbody}
+            </table>
+        </div>
+    `;
 }
 
 // ─── Init ──────────────────────────────────────────────────────
