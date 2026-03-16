@@ -32,7 +32,7 @@ function saveSettings() {
 
 // ─── Section meta ──────────────────────────────────────────────
 const SECTION_META = {
-    'section-dashboard': { title: 'Data Analytics Overview',  sub: 'Automatic AI-driven analysis & insights' },
+    'section-dashboard': { title: 'Ai Dataset Analytics',  sub: 'Automatic AI-driven analysis & insights' },
     'section-graphs':    { title: 'Visualization Suite',      sub: 'All generated charts from your dataset' },
     'section-cleaning':  { title: 'Data Cleaning Report',     sub: 'Automatic missing value & type repairs' },
     'section-ml':        { title: 'ML Predictions',           sub: 'Automated regression / classification' },
