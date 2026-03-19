@@ -34,12 +34,18 @@ UPLOAD_FOLDER = Path("backend/uploads")
 
 @app.get("/")
 def home():
-    return {"message": "AI Autonomous Data Analyst API running"}
+    return {"message": "AI Autonomous Data Analyst API running", "status": "online"}
+
+@app.get("/health")
+def health():
+    return {"status": "ok", "message": "Backend is reachable."}
 
 # Clean infinite and NaN values which break JSON serialization
 def sanitize_stats(stats):
     import numpy as np
+    import pandas as pd
     sanitized = {}
+    if not stats: return {}
     for key, value in stats.items():
         if isinstance(value, dict):
             sanitized[key] = sanitize_stats(value)

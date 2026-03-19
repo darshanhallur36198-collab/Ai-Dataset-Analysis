@@ -8,10 +8,10 @@ let analysisData = null;
 // ─── Settings ──────────────────────────────────────────────────
 function getSettings() {
     return {
-        apiUrl:    localStorage.getItem('api_url')    || 'http://127.0.0.1:8000',
+        apiUrl:    localStorage.getItem('api_url')    || 'http://localhost:8000',
         maxCharts: parseInt(localStorage.getItem('max_charts') || '20'),
         theme:     localStorage.getItem('chart_theme') || 'plotly_dark',
-        geminiKey: localStorage.getItem('gemini_key')  || '',
+        geminiKey: (localStorage.getItem('gemini_key') || '').trim(),
     };
 }
 
@@ -163,7 +163,12 @@ async function runAnalysis(file) {
         if (!response.ok || result.status === 'error') throw new Error(result.message || 'Analysis failed');
     } catch (err) {
         hideProgress();
-        showError(err.message);
+        console.error("Analysis Error:", err);
+        if (err.message === 'Failed to fetch') {
+            showError("Could not connect to the Backend server. Please ensure the Python backend is running on port 8000 (try running: python -m uvicorn backend.main:app).");
+        } else {
+            showError(err.message);
+        }
         return;
     }
 
@@ -572,9 +577,9 @@ async function sendChatQuery() {
         let mdText = result.response || result.detail || "Error from server";
         
         // Simple Markdown parsing for bold/italics
-        mdText = mdText.replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>');
-        mdText = mdText.replace(/\\*(.*?)\\*/g, '<em>$1</em>');
-        mdText = mdText.replace(/\\n/g, '<br>');
+        mdText = mdText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        mdText = mdText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        mdText = mdText.replace(/\n/g, '<br>');
 
         aiDiv.innerHTML = `<strong style="color:var(--text-primary)">AI:</strong> <span style="color:var(--text-secondary); line-height: 1.5;">${mdText}</span>`;
     } catch (err) {

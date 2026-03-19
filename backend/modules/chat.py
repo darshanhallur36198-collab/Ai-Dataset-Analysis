@@ -14,7 +14,12 @@ def chat_with_data(file_path: str, query: str, api_key: str = None) -> str:
     try:
         genai.configure(api_key=key_to_use)
         # We can use gemini-1.5-flash as it's fast and has a large context window
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        try:
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            # Test if model is accessible
+            # We don't want to call it yet, so we just proceed
+        except Exception:
+            model = genai.GenerativeModel('gemini-pro')
         
         # Load dataset
         try:
@@ -63,8 +68,35 @@ If the data sample and summary provided do not contain enough information to ful
 Format your answer with markdown. Avoid providing code unless asked. Direct, professional, and insightful.
 """
 
-        response = model.generate_content(prompt)
-        return response.text
+        print(f"[DEBUG] AI Prompt length: {len(prompt)} chars")
+        
+        try:
+            response = model.generate_content(prompt)
+        except Exception as e:
+            if "404" in str(e):
+                print("[INFO] gemini-1.5-flash not found, falling back to gemini-pro")
+                model = genai.GenerativeModel('gemini-pro')
+                response = model.generate_content(prompt)
+            else:
+                raise e
+        
+        # Check if response has parts (avoid error on blocked content)
+        if not response or not hasattr(response, 'text'):
+             if hasattr(response, 'prompt_feedback'):
+                 return f"AI Error: Your query or the data was blocked by safety filters. Details: {response.prompt_feedback}"
+             return "AI Error: Received empty response from Gemini. Please try a simpler question."
+             
+        try:
+            return response.text
+        except ValueError:
+            return "AI Error: The AI response was blocked by safety filters during generation."
 
     except Exception as e:
-        return f"Error communicating with AI: {str(e)}"
+        print(f"[ERROR] Chat exception: {str(e)}")
+        if "403" in str(e):
+            return "AI Error (403): Gemini API Key is invalid or has insufficient permissions."
+        if "429" in str(e):
+            return "AI Error (429): Quota exceeded. Please wait a moment and try again."
+        if "404" in str(e):
+            return "AI Error (404): Model not found. Please ensure your Gemini API project has at least one active model."
+        return f"AI Error: {str(e)}"
