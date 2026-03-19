@@ -27,6 +27,9 @@
             <li class="nav-item" data-section="section-ml">
                 <span class="nav-icon">🤖</span><span>ML Predictions</span>
             </li>
+            <li class="nav-item" data-section="section-chat" style="background-image: linear-gradient(135deg, rgba(157, 149, 255, 0.1), rgba(62, 198, 224, 0.1));">
+                <span class="nav-icon">💬</span><span>Chat with Data</span>
+            </li>
             <li class="nav-item" data-section="section-reports">
                 <span class="nav-icon">📑</span><span>Reports</span>
             </li>
@@ -143,6 +146,29 @@
             </div>
         </section>
 
+        <!-- ══ SECTION: CHAT WITH DATA ════════════════════════════════ -->
+        <section id="section-chat" class="page-section">
+            <div class="chart-card" style="display:flex; flex-direction:column; height: 75vh;">
+                <div class="chart-header" style="display:flex; justify-content: space-between; align-items: center;">
+                    <span>💬 Ask Questions About Your Data</span>
+                    <span style="font-size: 0.8rem; font-weight: normal; color: #9d95ff;">(Powered by Gemini)</span>
+                </div>
+                
+                <div id="chat-messages" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:15px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    <div class="empty-state" id="chat-empty-state">
+                        Ask natural language questions like: <br>
+                        <i style="color:#38ef7d">"Why did sales drop last month?"</i> or <br>
+                        <i style="color:#f7971e">"Which product is underperforming?"</i>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:10px; padding: 15px;">
+                    <input type="text" id="chat-input" class="setting-input" style="flex:1;" placeholder="Ask a question about your dataset...">
+                    <button class="btn-primary" id="chat-send-btn" onclick="sendChatQuery()">🚀 Ask AI</button>
+                </div>
+            </div>
+        </section>
+
         <!-- ══ SECTION: REPORTS ════════════════════════════════════════ -->
         <section id="section-reports" class="page-section">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
@@ -165,6 +191,10 @@
                     <div class="setting-row">
                         <label class="setting-label">Max Charts to Display</label>
                         <input id="setting-max-charts" class="setting-input" type="number" value="12" min="1" max="30">
+                    </div>
+                    <div class="setting-row">
+                        <label class="setting-label">Google Gemini API Key</label>
+                        <input id="setting-gemini-key" class="setting-input" type="password" placeholder="AIZAy... (Required for Chat)">
                     </div>
                     <div class="setting-row">
                         <label class="setting-label">Theme</label>

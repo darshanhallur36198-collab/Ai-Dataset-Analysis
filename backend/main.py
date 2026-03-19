@@ -10,8 +10,17 @@ from backend.modules.data_cleaner import clean_dataset
 from backend.modules.analyzer import dataset_statistics
 from backend.modules.visualizer import generate_charts
 from backend.modules.model_trainer import auto_train_model
+from backend.modules.chat import chat_with_data
+from pydantic import BaseModel
+from typing import Optional
 
 app = FastAPI(title="AI Autonomous Data Analyst", version="1.0")
+
+class ChatRequest(BaseModel):
+    query: str
+    file_path: str
+    api_key: Optional[str] = None
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -81,3 +90,15 @@ async def upload_dataset(file: UploadFile = File(...)):
 @app.get("/analysis")
 def get_analysis():
     return {"message": "Analysis endpoint"}
+
+@app.post("/chat")
+def data_chat(request: ChatRequest):
+    if not request.file_path or not request.query:
+        raise HTTPException(status_code=400, detail="Missing query or file_path")
+    
+    # Optional logic: ensure file exists
+    if not Path(request.file_path).exists():
+        raise HTTPException(status_code=404, detail="Dataset file not found. Please re-upload.")
+        
+    response_text = chat_with_data(request.file_path, request.query, request.api_key)
+    return {"status": "success", "response": response_text}

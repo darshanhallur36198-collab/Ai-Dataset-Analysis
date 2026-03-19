@@ -11,6 +11,7 @@ function getSettings() {
         apiUrl:    localStorage.getItem('api_url')    || 'http://127.0.0.1:8000',
         maxCharts: parseInt(localStorage.getItem('max_charts') || '20'),
         theme:     localStorage.getItem('chart_theme') || 'plotly_dark',
+        geminiKey: localStorage.getItem('gemini_key')  || '',
     };
 }
 
@@ -18,6 +19,7 @@ function saveSettings() {
     localStorage.setItem('api_url',     document.getElementById('setting-api-url').value.trim());
     localStorage.setItem('max_charts',  document.getElementById('setting-max-charts').value);
     localStorage.setItem('chart_theme', document.getElementById('setting-theme').value);
+    localStorage.setItem('gemini_key',  document.getElementById('setting-gemini-key').value.trim());
 
     // ── Re-render all open charts with the new theme ──────────
     if (analysisData && analysisData.charts) {
@@ -37,6 +39,7 @@ const SECTION_META = {
     'section-cleaning':  { title: 'Data Cleaning Report',     sub: 'Automatic missing value & type repairs' },
     'section-ml':        { title: 'ML Predictions',           sub: 'Automated regression / classification' },
     'section-reports':   { title: 'Statistical Report',       sub: 'Full descriptive statistics & summaries' },
+    'section-chat':      { title: 'Chat With Data',           sub: 'Ask natural language questions about your dataset' },
     'section-settings':  { title: 'Settings',                 sub: 'Configure API, chart limits & theme' },
 };
 
@@ -505,13 +508,103 @@ function populateReportsSection(analysis) {
     `;
 }
 
+// ─── Chat with Data section ────────────────────────────────────
+async function sendChatQuery() {
+    const input = document.getElementById('chat-input');
+    const query = input.value.trim();
+    if (!query) return;
+
+    if (!analysisData || !analysisData.file_path) {
+        alert("Please upload a dataset first on the Dashboard!");
+        return;
+    }
+
+    const settings = getSettings();
+    if (!settings.geminiKey) {
+        alert("Please configure your Google Gemini API Key in the Settings section before chatting.");
+        return;
+    }
+
+    // Hide empty state
+    const emptyState = document.getElementById('chat-empty-state');
+    if (emptyState) emptyState.style.display = 'none';
+
+    const messagesBox = document.getElementById('chat-messages');
+
+    // Add user message
+    const userDiv = document.createElement('div');
+    userDiv.style.background = 'rgba(108, 99, 255, 0.15)';
+    userDiv.style.padding = '12px 18px';
+    userDiv.style.borderRadius = '12px 12px 0 12px';
+    userDiv.style.alignSelf = 'flex-end';
+    userDiv.style.maxWidth = '80%';
+    userDiv.innerHTML = `<strong style="color:var(--text-primary)">You:</strong> <span style="color:var(--text-secondary)">${query.replace(/</g,"&lt;")}</span>`;
+    messagesBox.appendChild(userDiv);
+
+    input.value = '';
+    
+    // Add loading indicator
+    const aiDiv = document.createElement('div');
+    aiDiv.style.background = 'rgba(56, 239, 125, 0.1)';
+    aiDiv.style.padding = '12px 18px';
+    aiDiv.style.borderRadius = '12px 12px 12px 0';
+    aiDiv.style.alignSelf = 'flex-start';
+    aiDiv.style.maxWidth = '80%';
+    aiDiv.innerHTML = `<strong style="color:var(--text-primary)">AI:</strong> <span style="color:var(--text-secondary)"><span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block"></span> Thinking...</span>`;
+    messagesBox.appendChild(aiDiv);
+
+    // Scroll bottom
+    messagesBox.scrollTop = messagesBox.scrollHeight;
+
+    try {
+        const response = await fetch(`${settings.apiUrl}/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                query: query,
+                file_path: analysisData.file_path,
+                api_key: settings.geminiKey
+            })
+        });
+
+        const result = await response.json();
+        
+        let mdText = result.response || result.detail || "Error from server";
+        
+        // Simple Markdown parsing for bold/italics
+        mdText = mdText.replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>');
+        mdText = mdText.replace(/\\*(.*?)\\*/g, '<em>$1</em>');
+        mdText = mdText.replace(/\\n/g, '<br>');
+
+        aiDiv.innerHTML = `<strong style="color:var(--text-primary)">AI:</strong> <span style="color:var(--text-secondary); line-height: 1.5;">${mdText}</span>`;
+    } catch (err) {
+        aiDiv.innerHTML = `<strong style="color:#f98d95">AI Error:</strong> <span style="color:var(--text-secondary)">${err.message}</span>`;
+    }
+    
+    // Scroll bottom
+    messagesBox.scrollTop = messagesBox.scrollHeight;
+}
+
+// Support Enter key for chat input
+document.addEventListener('DOMContentLoaded', () => {
+    const chatInput = document.getElementById('chat-input');
+    if(chatInput) {
+        chatInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendChatQuery();
+            }
+        });
+    }
+});
+
 // ─── Init ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
     initNav();
     initFileInput();
 
-    const { apiUrl, maxCharts, theme } = getSettings();
+    const { apiUrl, maxCharts, theme, geminiKey } = getSettings();
     document.getElementById('setting-api-url').value    = apiUrl;
     document.getElementById('setting-max-charts').value = maxCharts;
     document.getElementById('setting-theme').value      = theme;
+    document.getElementById('setting-gemini-key').value = geminiKey;
 });
