@@ -8,7 +8,7 @@ let analysisData = null;
 // ─── Settings ──────────────────────────────────────────────────
 function getSettings() {
     return {
-        apiUrl:    localStorage.getItem('api_url')    || 'http://localhost:8000',
+        apiUrl:    localStorage.getItem('api_url')    || 'https://ai-dataset-analysis.onrender.com',
         maxCharts: parseInt(localStorage.getItem('max_charts') || '20'),
         theme:     localStorage.getItem('chart_theme') || 'plotly_dark',
         geminiKey: (localStorage.getItem('gemini_key') || '').trim(),
@@ -72,6 +72,10 @@ function initFileInput() {
         if (e.target.files.length > 0) {
             document.getElementById('file-name').textContent = `📄 ${e.target.files[0].name}`;
             runAnalysis(e.target.files[0]);   // ← AUTOMATIC
+
+            // Allow picking the same file again without a manual page reload
+            // by clearing the file input value after we grab the File object.
+            fileInput.value = '';
         }
     });
 
@@ -165,7 +169,7 @@ async function runAnalysis(file) {
         hideProgress();
         console.error("Analysis Error:", err);
         if (err.message === 'Failed to fetch') {
-            showError("Could not connect to the Backend server. Please ensure the Python backend is running on port 8000 (try running: python -m uvicorn backend.main:app).");
+            showError("Could not connect to the Backend server. Ensure your Render backend is active (visit: https://ai-dataset-analysis.onrender.com/health) or check the API URL in settings.");
         } else {
             showError(err.message);
         }
